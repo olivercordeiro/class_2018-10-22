@@ -5,21 +5,55 @@ date: "10/22/2018"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, message = FALSE, warning = FALSE, echo = FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(stringr)
+library(knitr)
+```
+
+
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE, cache = TRUE}
+download.file("https://www.fec.gov/files/bulk-downloads/1990/indiv90.zip", destfile = "indiv90.zip")
+
+unzip("indiv90.zip")
+
+x <- read_delim("itcont.txt", delim = "|", col_names = FALSE, escape_double = FALSE)
+
+
+
+x %>% 
+  transmute(name = X8, employer = X12, state = X10, amount = X15) 
+  filter(str_detect(employer, "HARVARD")) %>% 
+  count(employer) 
+```
+
+```{r, messgae = FALSE, warning = FALSE,echo = FALSE, cache = TRUE}
+download.file("https://www.fec.gov/files/bulk-downloads/1990/cm90.zip", destfile = "cm90.zip")
+
+unzip("cm90.zip")
+
+mascom <- read_delim("cm.txt", delim = "|", col_names = FALSE, escape_double = FALSE)
+
+mascom %>% 
+  transmute(committee = X2, name = X3, employer = X14, party = X11,  address = X4, city = X6, stae = X7, zipcode = X8) %>% 
+  filter(str_detect(employer, "HARVARD"))
 ```
 
 ```{r}
-unzip("indiv90.zip")
+indiv <- x %>% 
+          transmute(name = X8, employer = X12, state = X10, amount = X15) 
+mascom2 <- mascom %>% 
+  transmute(committee = X2, name = X3, employer = X14, party = X11,  address = X4, city = X6, stae = X7, zipcode = X8)
 
-x <- read_delim("itcont.txt", delim = "|", col_names = FALSE)
-  
-  
-x %>% 
-  transmute(name = X8, employer = X12, state = X10, amount = X15) %>% 
-  filter(str_detect(employer, "HARVARD")) %>% 
-  count(employer)
+all <- left_join(indiv, mascom2,  by = "name", suffix = c(".indiv", ".cm"))
+
+all %>% 
+  filter(str_detect(employer.indiv, "HARVARD")) %>% 
+  arrange(desc(amount)) %>% 
+  select(name, employer.indiv, amount)
 ```
+
+
 
